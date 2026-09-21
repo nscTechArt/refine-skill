@@ -38,7 +38,7 @@ Use judgment; do not force every category onto every change.
 - dead, stale, compatibility, migration, or bookkeeping code no longer earning its keep;
 - duplicated documentation or comments with unclear ownership;
 - drive-by changes mixed into the target change;
-- leftovers/references made obsolete by the change.
+- leftovers/references made obsolete by the change. When the change moves or replaces a call path, verify the old entrypoint's remaining consumers and retention obligations, including dynamic entrypoints and external compatibility, before judging whether to keep it. Distinguish production consumers from test-only references; test-only use is not itself proof of removability. A removal finding must explain how required behavior and test coverage are preserved.
 
 ### Guardrails
 
