@@ -1,68 +1,78 @@
 # Refine
 
-A skill for coding agents that reviews code and documentation for quality, performance, and reuse, then applies targeted cleanup while preserving behavior. Inspired by Cursor's `/simplify` workflow.
+Refine code and documentation with targeted cleanup that preserves intended behavior.
 
-**Version:** v0.3. Reviewers provide findings; the parent agent owns edits and verification.
+## The problem
 
-The skill uses the [Agent Skills format](https://agentskills.io/specification). It requires access to a Git working tree and tools for reading files, running commands, and applying authorized edits. Subagents are optional; Python is only required for the development fixtures.
+A working change can still contain unnecessary branches, duplicated logic, or documentation that is harder to follow than it needs to be. Cleanup needs to preserve the features, fixes, and compatibility that the change introduced. Inspired by Cursor's `/simplify` workflow, Refine gives coding agents a focused review and cleanup pass before you accept the result.
 
-## Install locally
+## The three review lenses
 
-Copy the complete [`skills/refine/`](skills/refine/) folder, including `references/`, to a location supported by your agent:
+| Lens | What it asks |
+|---|---|
+| Quality | Which unnecessary complexity can be removed to make the code or documentation clearer? |
+| Performance | What meaningful wasted work can be removed while also simplifying the implementation? |
+| Reuse | Which existing helpers or repository patterns fit the intended behavior? |
 
-| Agent / official instructions | All your projects | One project | Native invocation |
-|---|---|---|---|
-| [Codex](https://learn.chatgpt.com/docs/build-skills) | `~/.agents/skills/refine/` | `<project>/.agents/skills/refine/` | `$refine` |
-| [Cursor](https://cursor.com/docs/skills) | `~/.cursor/skills/refine/` | `<project>/.cursor/skills/refine/` | Type `/` and select `refine` |
-| [Claude Code](https://code.claude.com/docs/en/skills) | `~/.claude/skills/refine/` | `<project>/.claude/skills/refine/` | `/refine` |
+Recommendations need concrete evidence and a worthwhile reduction in complexity. Review effort scales with the selected scope; documentation is assessed for clarity and maintenance cost.
 
-`~` is your user home directory. For other agents, follow their skill discovery instructions or provide the path to `SKILL.md` directly if they can read local files and follow its references.
+## Review behavior
 
-The installed folder should contain:
+- Keeps edits within the selected scope and preserves unrelated local changes, including changes in the same file.
+- Preserves intended behavior and compatibility, deferring recommendations when the evidence is insufficient.
+- Supports review without edits. Staging and committing require user authorization; rewriting history requires explicit authorization for that operation.
+- Treats correctness fixes and behavior changes as separate work requiring user authorization.
+- Leaves the target unchanged when no worthwhile cleanup is found.
+
+## Install
+
+Refine uses the [Agent Skills format](https://agentskills.io/specification). Your agent needs a Git working tree and tools to read files, run commands, and apply authorized edits. Subagents are optional.
+
+**Option A: Ask your agent (recommended)**
 
 ```text
-refine/
-├── SKILL.md
-└── references/
-    ├── reviewers.md
-    └── reconciliation.md
+Install the refine skill from https://github.com/nscTechArt/refine-skill.
+The skill is in skills/refine/; include its references/ folder.
 ```
 
-## Use
+**Option B: npx**
 
-Use your agent's native invocation above, or explicitly provide the skill path and target repository:
+With `Node.js` and `npm` installed, run:
 
-```text
-Read and use the refine skill at /absolute/path/to/refine/SKILL.md.
-Work in /absolute/path/to/my-project. Refine the staged changes.
+```sh
+npx skills add nscTechArt/refine-skill --skill refine
 ```
 
-Once the skill is loaded, you can select a scope or request a review without edits:
+This installs into the current project by default. Add `-g` to install for your user account. See the [Skills CLI documentation](https://github.com/vercel-labs/skills#install-a-skill) for options.
+
+**Option C: Manual copy**
+
+Clone or download this repository and copy the complete [`skills/refine/`](skills/refine/) folder, including `references/`, into your agent's skills directory. Example destinations are `~/.agents/skills/refine/`, `~/.claude/skills/refine/`, or `<project>/.cursor/skills/refine/`. The entry-point is `SKILL.md`; `~` is your user home directory.
+
+## Usage
+
+Ask your agent to use the installed skill and name the target:
 
 ```text
-Refine the staged changes.
-Refine commit abc1234.
+Use refine to clean up the staged changes.
+Use refine to review and clean up commit abc1234.
+Use refine to simplify README.md while preserving its meaning.
 Review origin/main..HEAD using refine without editing files.
 ```
 
-## Behavior and limits
+An explicit scope takes precedence; an empty scope ends the pass. Without a scope, Refine looks for relevant staged and unstaged changes, then concrete conversation targets, then HEAD. Whole-repository cleanup requires an explicit request.
 
-- An explicit scope takes precedence. If it is empty, the pass stops. Whole-repository cleanup requires an explicit request.
-- Without a scope, the skill uses relevant unstaged and staged changes, then concrete conversation targets, then HEAD.
-- Cleanup stays within the selected scope and preserves unrelated local changes, including changes in the same file. Findings that cannot be safely separated from local work are deferred.
-- Reviewing staged changes does not authorize re-staging; asking for a commit message does not authorize a commit. Authorization to commit permits a new commit; rewriting existing commits requires explicit authorization for that operation.
-- Cleanup preserves the selected change's intended outcome, including its features, fixes, and compatibility contracts. Each accepted recommendation needs evidence of behavior preservation; uncertain recommendations are deferred. Correctness or product behavior changes require authorization in your request. No useful findings is a valid outcome.
-- Quality, performance, and reuse remain the three review lenses, but review effort scales with the target. Small scopes use one local review; larger scopes can use up to three independent, read-only reviewers for applicable lenses. Delegation requires sufficient capacity and confirmed use of the parent's model; otherwise the parent reviews locally and reports the fallback. Documentation does not require a runtime-performance review.
+### When to use it
 
-These are instructions to the agent, not tool-enforced isolation. Verification depends on the checks available in your repository; inspect the resulting diff before accepting it.
+- Before accepting or committing a change, to remove unnecessary complexity.
+- When a specific file, module, or document needs cleanup while keeping its intended behavior or meaning.
+- When you want a review of simplification opportunities before authorizing edits.
 
-## Compatibility status
+### What you get back
 
-Earlier workflow evaluation in Codex covered six synthetic cases with sequential review, plus a separate parallel-review smoke check. Those results predate v0.3's proportional review policy; this revision still needs independent agent and platform-level acceptance runs. The installation table follows the hosts' official documentation; native installation/discovery/invocation and execution in Cursor or Claude Code have not been verified here. Format compatibility alone does not establish identical behavior across agents.
+By default, Refine applies accepted cleanup and returns a brief report covering what changed, material recommendations deferred and why, and verification results. A review-only request produces findings without edits. If no worthwhile cleanup is found, it reports that outcome.
 
-## Development
-
-The [acceptance guide](examples/acceptance-cases.md) describes six behavioral fixtures and the checks that require manual trace inspection. Running the fixture harness requires Python 3 and Git. These development files are not needed when installing the skill.
+Verification depends on the checks available in your repository. The skill guides agent behavior rather than enforcing tool isolation; inspect the resulting diff before accepting it.
 
 ## License
 
