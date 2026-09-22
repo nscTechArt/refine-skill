@@ -10,7 +10,7 @@ After all three reviewers finish:
 2. merge supporting evidence without inflating severity;
 3. separate mutually reinforcing findings from genuinely conflicting recommendations;
 4. mark findings that require product/design judgment;
-5. mark findings that are outside the resolved simplify scope.
+5. mark findings outside the selected scope or requiring a behavior/correctness change.
 
 Do not reward a suggestion merely because two reviewers phrased it similarly. Multiple reviewers may be reacting to the same superficial symptom.
 
@@ -43,14 +43,16 @@ Before applying a finding, ask:
 
 1. **Correct?** Is the premise true in the current tree?
 2. **In scope?** Does it belong to the resolved change surface rather than nearby cleanup debt?
-3. **Behavior-preserving?** Could it undo the original bug fix/feature or change public behavior?
+3. **Behavior-preserving?** Could it undo the original bug fix/feature or change public behavior? Check affected edge cases such as empty/whitespace/null input, errors, ordering, and lifecycle timing. Fewer states or passing existing tests alone do not establish equivalence.
 4. **Surgical?** Can it be implemented without broad churn?
 5. **Net simpler?** Does it reduce more complexity than it introduces?
 6. **Repository-aligned?** Does it follow established local patterns, or is any novelty justified?
 7. **Decision-safe?** Does it avoid making an unresolved product/design/visual/API choice?
-8. **Worth it?** Is the payoff material enough for a simplify pass?
+8. **Worth it?** Is the payoff material enough for a refinement pass?
 
 A finding can be valid and still be deferred.
+
+Correctness repairs and changed product behavior are separate work. Apply them only when already authorized by the user's request; otherwise report the concrete problem without folding it into the refinement patch.
 
 ## Anti-abstraction rule
 
@@ -68,7 +70,7 @@ Prefer the smallest reusable unit that already matches repository practice. Some
 
 ## Performance rule
 
-Do not turn `/simplify` into `/optimize`.
+Do not turn `$refine` into a broad optimization pass.
 
 A performance finding should normally be applied only when the optimization is also a simplification or an obvious removal of wasted work. Skip speculative micro-optimizations, new caches, extra branch machinery, or architecture changes unless the evidence and payoff are unusually clear.
 
@@ -79,8 +81,8 @@ Before edits and again before reporting:
 - compare `git status` / diff with the resolved scope;
 - preserve unrelated local modifications;
 - do not run broad formatters that rewrite excluded files;
-- do not commit unless the user explicitly asked for a commit;
-- do not revert user changes to make the simplify patch cleaner.
+- preserve index/history unless staging/committing was authorized by the user; a staged review or commit-message request is not that authorization;
+- do not revert user changes to make the refinement patch cleaner.
 
 ## Final review
 

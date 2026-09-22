@@ -1,121 +1,61 @@
-# codex-simplify-plugin
+# Refine
 
-An independent Codex implementation of a multi-agent **simplify pass**: inspect a recent change, run three read-only reviews in parallel (code quality, performance, and reuse/repository patterns), reconcile the evidence, then apply only targeted behavior-preserving cleanup.
+A Codex skill that reviews code and documentation for quality, performance, and reuse, then applies targeted cleanup while preserving behavior. Inspired by Cursor's `/simplify` workflow.
 
-The repository name says “plugin”; the v0.1 implementation is packaged as a **Codex Skill**.
-
-## Status
-
-**v0.1 / behavioral prototype**
-
-The workflow is based on black-box observations of Cursor `/simplify` sessions across rendering, C#, and React/Tailwind projects. It does not contain Cursor source code or claim exact prompt/source compatibility.
-
-See:
-
-- [`docs/architecture.md`](docs/architecture.md) — implementation model
-- [`docs/cursor-observations.md`](docs/cursor-observations.md) — observed vs inferred behavior
-- [`examples/expected-flow.md`](examples/expected-flow.md) — generic end-to-end example
-
-## Core behavior
-
-```text
-scope discovery + workspace guard
-             |
-             v
-semantic change understanding
-             |
-             v
-reviewer-specific briefs
-             |
-      +------+-------+
-      |      |       |
-      v      v       v
-  Quality   Perf    Reuse
-  READONLY READONLY READONLY
-      |      |       |
-      +------+-------+
-             |
-             v
-evidence reconciliation
-             |
-             v
-surgical parent edits
-             |
-             v
-adaptive verification
-```
-
-The key rule is **minimize total accidental complexity**, not “make the code as DRY/short/fast as possible.” A reviewer may return no findings, and a valid finding may still be deferred when it adds abstraction, expands scope, risks behavior, or requires a product decision.
+**Version:** v0.2. Reviewers provide findings; the parent agent owns edits and verification.
 
 ## Install
 
-Copy or symlink the skill directory into your Codex skills directory:
+Copy or symlink the complete [`skills/refine/`](skills/refine/) folder, including `references/`, to one of these locations:
+
+| Scope | Destination |
+|---|---|
+| All your projects | `~/.agents/skills/refine/` |
+| One project | `<project>/.agents/skills/refine/` |
+
+`~` is your user home directory. If the skill does not appear after installation, restart Codex. See the [official skills documentation](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills).
+
+The installed folder should contain:
 
 ```text
-skills/simplify/
-```
-
-Target location:
-
-```text
-$CODEX_HOME/skills/simplify
-```
-
-or, when `CODEX_HOME` is unset:
-
-```text
-~/.codex/skills/simplify
-```
-
-Codex Skills use a `SKILL.md` entrypoint with optional supporting resources. This repository keeps detailed reviewer and reconciliation policy in `references/` so the entrypoint stays focused.
-
-## Use
-
-Explicit invocation in Codex:
-
-```text
-$simplify
-```
-
-or with a scope in the request, for example:
-
-```text
-Use $simplify on commit abc1234. Do not commit.
-```
-
-```text
-Use $simplify on origin/main..HEAD.
-```
-
-With no explicit scope, the skill inspects the relevant working-tree/index changes and protects unrelated local modifications.
-
-## Skill layout
-
-```text
-skills/simplify/
+refine/
 ├── SKILL.md
 └── references/
     ├── reviewers.md
     └── reconciliation.md
 ```
 
-### Reviewer roles
+## Use
 
-- **Code Quality** — accidental complexity, redundant comments/state/abstractions, stale or compatibility residue.
-- **Performance** — material waste removable without turning the pass into a redesign; `none` is a valid result.
-- **Reuse / Repository Patterns** — existing helpers, sibling patterns, tests, docs ownership, architecture/ADR constraints, plus anti-reuse findings when unification would be wrong.
+Ask Codex to run the skill in the repository you want to refine:
 
-All three are instructed to remain read-only. The parent agent owns reconciliation and editing.
+```text
+$refine
+```
 
-## Design references
+You can select a scope or request a review without edits:
 
-The packaging follows the current Codex Skill model and its `SKILL.md` + optional `references/` structure. OpenAI's own Codex repository also contains an orchestrator-style code-review skill that explicitly delegates review work to subagents; this project applies that general orchestration pattern to simplification rather than copying its review policy.
+```text
+Use $refine on the staged changes.
+Use $refine on commit abc1234.
+Use $refine to review origin/main..HEAD without editing files.
+```
 
-## Non-goals
+## Behavior and limits
 
-- Reproduce proprietary Cursor source code or hidden prompts verbatim.
-- Turn every simplify pass into a broad refactor.
-- Force every reviewer to find a problem.
-- Introduce abstractions solely to remove tiny duplication.
-- Optimize unrelated pre-existing code.
-- Touch unrelated working-tree changes.
+- An explicit scope takes precedence. If it is empty, the pass stops. Whole-repository cleanup requires an explicit request.
+- Without a scope, the skill uses relevant unstaged and staged changes, then concrete conversation targets, then HEAD.
+- Cleanup stays within the selected scope and preserves unrelated local changes, including changes in the same file. Findings that cannot be safely separated from local work are deferred.
+- Reviewing staged changes does not authorize re-staging. Index and history stay unchanged unless you authorize staging or committing; asking for a commit message does not authorize a commit.
+- Changes must preserve behavior and the original fix. Correctness or product behavior changes require authorization in your request. No useful findings is a valid outcome.
+- Three reviewers run in parallel when available. Otherwise, the parent performs the three review passes sequentially and reports that fallback.
+
+These are instructions to the agent, not tool-enforced isolation. Verification depends on the checks available in your repository; inspect the resulting diff before accepting it.
+
+## Development
+
+The [acceptance guide](examples/acceptance-cases.md) describes six behavioral fixtures and the checks that require manual trace inspection. Running the fixture harness requires Python 3 and Git. These development files are not needed when installing the skill.
+
+## License
+
+[Apache-2.0](LICENSE).

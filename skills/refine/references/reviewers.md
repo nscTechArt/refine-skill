@@ -2,20 +2,21 @@
 
 The orchestrator should generate a task-specific brief for each reviewer. These are role contracts, not giant static prompts: adapt the context, search targets, and domain checks to the actual change.
 
-All reviewers are **read-only**. They must not edit files, run formatters, create worktrees, commit, or otherwise mutate the repository.
+All reviewers are **read-only**. They must not edit files, run formatters, stage changes, create worktrees, commit, or otherwise mutate the repository.
 
 ## Shared brief fields
 
-Each brief should include only the context that helps that role:
+Each brief starts from the same scope evidence, with context tailored to the role:
 
-- repository and resolved scope;
+- repository, selected revision/diff or files, and exclusions;
+- full selected diff, or file list + relevant hunks + scope summary when too large (with a way to inspect the rest);
 - concise semantic summary of the change;
 - relevant files/symbols/consumers;
 - known exclusions and unrelated worktree changes;
 - role-specific search targets;
 - output contract.
 
-Avoid dumping irrelevant repository history. A raw diff can be useful to the quality reviewer; performance and reuse often benefit more from a semantic summary plus targeted files/search questions.
+For non-diff scopes, name the selected files/symbols and boundaries. Role-specific summaries supplement this shared evidence; they must not silently substitute a different scope. Searching outside the scope informs a finding but does not authorize edits there.
 
 ## Code quality reviewer
 
@@ -46,6 +47,7 @@ Use judgment; do not force every category onto every change.
 - Do not propose large redesigns outside the resolved scope.
 - Prefer removing complexity to moving it elsewhere.
 - A small typed/domain wrapper may be worth keeping even when its body is thin.
+- Preserve intent-bearing comments, serialization compatibility, and ABI layout even when a reference search finds no ordinary callers.
 
 ### Output
 
@@ -64,7 +66,7 @@ If there is nothing material, explicitly say so.
 
 ### Mission
 
-Find meaningful performance waste on the changed/relevant paths when the waste can be removed without turning the simplify pass into a redesign.
+Find meaningful performance waste on the changed/relevant paths when the waste can be removed without turning the refinement pass into a redesign.
 
 ### Build a domain-specific checklist
 
@@ -94,8 +96,9 @@ Examples for UI/web code:
 
 - It is correct to return **no material performance issues**.
 - Ignore theoretical micro-optimizations whose complexity cost exceeds their benefit.
-- Distinguish pre-existing architecture from regressions/opportunities directly relevant to the simplify surface.
+- Distinguish pre-existing architecture from regressions/opportunities directly relevant to the refinement surface.
 - Do not recommend a new cache/branch/variant merely because it can be faster in isolation.
+- Use the actual execution frequency: a deterministic test or one-time editor action is not a frame hot path. For documentation, report no runtime issue; flag reading/maintenance cost only when there is concrete evidence.
 
 ### Output
 
@@ -141,6 +144,7 @@ Depending on the change, inspect:
 - Explicitly report **anti-reuse** when a tempting existing helper/pattern has materially different semantics.
 - If no helper exists, say so; do not invent a wrapper solely to satisfy the review.
 - Share styling/implementation detail without merging domain APIs when repository architecture says they are distinct.
+- Before recommending an existing helper, compare its preconditions, early exits, errors, and lifecycle with the changed path. Reuse that reinstates the original bug is not a simplification.
 
 ### Output
 
