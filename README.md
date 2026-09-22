@@ -1,6 +1,6 @@
 # Refine
 
-Refine code and documentation with targeted cleanup that preserves intended behavior.
+Review code and documentation for quality, performance, and reuse opportunities, then apply targeted cleanup that preserves intended behavior.
 
 ## The problem
 
@@ -10,19 +10,28 @@ A working change can still contain unnecessary branches, duplicated logic, or do
 
 | Lens | What it asks |
 |---|---|
-| Quality | Which unnecessary complexity can be removed to make the code or documentation clearer? |
-| Performance | What meaningful wasted work can be removed while also simplifying the implementation? |
+| Quality | Where do unnecessary complexity, unclear ownership, or inconsistencies affect the change? |
+| Performance | What computation, I/O, allocation, or resource retention is wasteful at realistic scale? |
 | Reuse | Which existing helpers or repository patterns fit the intended behavior? |
 
-Recommendations need concrete evidence and a worthwhile reduction in complexity. Review effort scales with the selected scope; documentation is assessed for clarity and maintenance cost.
+Discovery and implementation have separate thresholds. A confirmed finding needs evidence of a problem or concrete improvement opportunity; it does not need a fully verified remedy. A specific observation with missing evidence can be reported as an unresolved lead. Automatic cleanup additionally requires a worthwhile reduction in complexity and evidence that intended behavior will survive.
+
+Review effort follows the target's dependencies and uncertainty as well as its size. Local and delegated reviews share the same investigation coverage and completion criterion. Documentation is assessed for clarity, consistency, and maintenance cost.
+
+## Workflow
+
+1. **Select the target.** Establish the snapshot and edit boundaries, preserving unrelated work.
+2. **Investigate.** Read each target in context, trace relevant paths, and search for existing implementations through all applicable review lenses.
+3. **Validate and select edits.** Confirm findings or identify specific evidence gaps, then independently assess whether proposed remedies qualify for implementation.
+4. **Verify and report.** Check applied changes and report confirmed findings, their outcomes, unresolved leads, and coverage limitations.
 
 ## Review behavior
 
-- Keeps edits within the selected scope and preserves unrelated local changes, including changes in the same file.
-- Preserves intended behavior and compatibility, deferring recommendations when the evidence is insufficient.
+- Follows related code beyond changed lines to investigate the target while keeping edits within scope and preserving unrelated local changes.
+- Preserves intended behavior and compatibility in cleanup. Missing proof that a remedy is safe defers the edit without hiding a confirmed finding.
 - Supports review without edits. Staging and committing require user authorization; rewriting history requires explicit authorization for that operation.
-- Treats correctness fixes and behavior changes as separate work requiring user authorization.
-- Leaves the target unchanged when no worthwhile cleanup is found.
+- Reports relevant correctness issues and performance opportunities even when their remedies are not simplifications. Implements such work only when the existing request authorizes it.
+- Leaves the target unchanged when no cleanup qualifies; this does not imply that no issues were found.
 
 ## Install
 
@@ -66,11 +75,13 @@ An explicit scope takes precedence; an empty scope ends the pass. Without a scop
 
 - Before accepting or committing a change, to remove unnecessary complexity.
 - When a specific file, module, or document needs cleanup while keeping its intended behavior or meaning.
-- When you want a review of simplification opportunities before authorizing edits.
+- When you want findings and improvement opportunities assessed without editing files.
 
 ### What you get back
 
-By default, Refine applies accepted cleanup and returns a brief report covering what changed, material recommendations deferred and why, and verification results. A review-only request produces findings without edits. If no worthwhile cleanup is found, it reports that outcome.
+By default, Refine applies accepted cleanup and reports changes along with the remaining confirmed findings and why they remain. A review-only request leads with findings, evidence, proposed remedies, and blockers without editing files. Both modes retain distinct confirmed findings, including small improvements, and separately identify unresolved leads with the checks needed to resolve them. Duplicate instances can be grouped.
+
+Reports include verification and relevant coverage limits, distinguishing no findings from no accepted edits or incomplete investigation. Correctness repairs, behavior changes, and optimizations requiring added complexity are reported separately from simplification.
 
 Verification depends on the checks available in your repository. The skill guides agent behavior rather than enforcing tool isolation; inspect the resulting diff before accepting it.
 
