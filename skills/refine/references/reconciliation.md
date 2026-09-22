@@ -43,7 +43,7 @@ Before applying a finding, ask:
 
 1. **Correct?** Is the premise true in the current tree?
 2. **In scope?** Does it belong to the resolved change surface rather than nearby cleanup debt?
-3. **Behavior-preserving?** Could it undo the original bug fix/feature or change public behavior? Check affected edge cases such as empty/whitespace/null input, errors, ordering, and lifecycle timing. Fewer states or passing existing tests alone do not establish equivalence.
+3. **Behavior-preserving?** For each accepted finding, state which part of the behavior baseline it affects and cite concrete code-path reasoning or focused verification showing that behavior remains intact. Check affected edge cases such as empty/whitespace/null input, errors, ordering, and lifecycle timing. Fewer states or passing existing tests alone do not establish equivalence. If preservation cannot be established, retain the implementation and report the recommendation as deferred with the missing evidence.
 4. **Surgical?** Can it be implemented without broad churn?
 5. **Net simpler?** Does it reduce more complexity than it introduces?
 6. **Repository-aligned?** Does it follow established local patterns, or is any novelty justified?
@@ -81,7 +81,7 @@ Before edits and again before reporting:
 - compare `git status` / diff with the resolved scope;
 - preserve unrelated local modifications;
 - do not run broad formatters that rewrite excluded files;
-- preserve index/history unless staging/committing was authorized by the user; a staged review or commit-message request is not that authorization;
+- check index/history changes against the authorization boundaries in [Select the scope](../SKILL.md#1-select-the-scope);
 - do not revert user changes to make the refinement patch cleaner.
 
 ## Final review
@@ -89,6 +89,6 @@ Before edits and again before reporting:
 After applying accepted findings:
 
 - inspect the final diff for accidental scope expansion;
-- confirm the original behavior/fix remains intact;
+- confirm the final changes preserve the behavior baseline using the evidence required by the acceptance filter;
 - run proportionate checks permitted by repository/user constraints;
 - report skipped findings separately from applied cleanup.

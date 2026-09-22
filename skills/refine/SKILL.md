@@ -24,13 +24,13 @@ Record the selected revision/diff and exclusions. Git diffs omit untracked files
 
 For a historical or staged diff, compare the selected snapshot with the current working tree before proposing edits. Preserve unrelated hunks even within the same file. If the versions cannot be safely separated, report the affected finding as blocked rather than overwriting local work.
 
-Keep index and history unchanged unless the user has authorized staging or committing, including earlier in the conversation. Reviewing staged changes does not authorize re-staging; writing a commit message does not authorize a commit.
+Keep the index unchanged unless the user has authorized staging or committing, including earlier in the conversation. Authorization to commit permits a new commit; rewriting existing commits (for example, amend or rebase) requires explicit authorization for that operation. Otherwise preserve history. Reviewing staged changes does not authorize re-staging; writing a commit message does not authorize a commit.
 
 ## 2. Prepare the reviews
 
-Understand the change's purpose, affected consumers, relevant runtime scale, and the behavior an earlier fix must retain.
+Record the behavior baseline: the selected change's intended outcome, including the features, fixes, and compatibility contracts it introduces or preserves. For a commit or diff, use the intended behavior after that change; for a named area, use its existing behavior and documented contracts. Historical scope does not authorize undoing later changes. Identify affected consumers and relevant runtime scale.
 
-Read [references/reviewers.md](references/reviewers.md) for the role contracts. Give all reviewers the same selected scope and exclusions, plus the full selected diff when practical. For large diffs, provide the file list, relevant hunks, a scope summary, and how to inspect omitted material. For non-diff scopes, provide the selected files/symbols and boundaries instead.
+Read [references/reviewers.md](references/reviewers.md) for the role contracts. Give all reviewers the same behavior baseline, selected scope and exclusions, plus the full selected diff when practical. For large diffs, provide the file list, relevant hunks, a scope summary, and how to inspect omitted material. For non-diff scopes, provide the selected files/symbols and boundaries instead.
 
 Add role-specific context: invariants for quality, hot paths and scale for performance, and existing patterns or search targets for reuse. This context supplements the shared scope evidence.
 
@@ -50,7 +50,7 @@ If delegation, capacity, or confirmed same-model selection is unavailable, the p
 
 Read [references/reconciliation.md](references/reconciliation.md) before accepting findings. Deduplicate recommendations and resolve disagreements against behavior and repository evidence, not votes or confidence scores.
 
-Apply only supported, in-scope, behavior-preserving changes that reduce total complexity. Keep the original fix intact. Small duplication can be simpler than a new abstraction.
+Apply only supported, in-scope changes that preserve the behavior baseline and reduce total complexity. Small duplication can be simpler than a new abstraction.
 
 Report discovered correctness problems or behavior changes separately from simplification. Implement them only when the user's existing request also authorizes that work; otherwise leave them as findings. Do not silently turn input validation, error handling, or product choices into cleanup.
 

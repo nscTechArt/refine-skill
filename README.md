@@ -50,8 +50,8 @@ Review origin/main..HEAD using refine without editing files.
 - An explicit scope takes precedence. If it is empty, the pass stops. Whole-repository cleanup requires an explicit request.
 - Without a scope, the skill uses relevant unstaged and staged changes, then concrete conversation targets, then HEAD.
 - Cleanup stays within the selected scope and preserves unrelated local changes, including changes in the same file. Findings that cannot be safely separated from local work are deferred.
-- Reviewing staged changes does not authorize re-staging. Index and history stay unchanged unless you authorize staging or committing; asking for a commit message does not authorize a commit.
-- Changes must preserve behavior and the original fix. Correctness or product behavior changes require authorization in your request. No useful findings is a valid outcome.
+- Reviewing staged changes does not authorize re-staging; asking for a commit message does not authorize a commit. Authorization to commit permits a new commit; rewriting existing commits requires explicit authorization for that operation.
+- Cleanup preserves the selected change's intended outcome, including its features, fixes, and compatibility contracts. Each accepted recommendation needs evidence of behavior preservation; uncertain recommendations are deferred. Correctness or product behavior changes require authorization in your request. No useful findings is a valid outcome.
 - Three reviewers run in parallel when the host has sufficient capacity and can establish that they use the parent's model. Otherwise, the parent performs the three review passes sequentially and reports that fallback.
 
 These are instructions to the agent, not tool-enforced isolation. Verification depends on the checks available in your repository; inspect the resulting diff before accepting it.
