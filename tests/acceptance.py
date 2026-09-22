@@ -31,6 +31,7 @@ CASES = {
         "base": "def total(values):\n    return 0\n",
         "staged": "def total(values):\n    subtotal = sum(values)\n    result = subtotal\n    return result\n",
         "request": "Refine the staged changes, then write a commit message.",
+        "requires_cleanup": True,
         "checks": "from app import total\nassert total([2, 3, -1]) == 4\nassert total([]) == 0\n",
         "editable": ["app.py"],
     },
@@ -79,7 +80,7 @@ def state(repo):
 
 
 def prepare():
-    root = Path(tempfile.mkdtemp(prefix="refine-v02-"))
+    root = Path(tempfile.mkdtemp(prefix="refine-"))
     manifest = {}
     for name, case in CASES.items():
         repo = root / name
@@ -116,7 +117,12 @@ def prepare():
             f'Work in "{repo}". {case["request"]} '
             "The fixture's behavior check is `python -B checks.py`, run from that directory."
         )
-        manifest[name] = {"before": state(repo), "editable": case["editable"], "request": request}
+        manifest[name] = {
+            "before": state(repo),
+            "editable": case["editable"],
+            "request": request,
+            "requires_cleanup": case.get("requires_cleanup", False),
+        }
         if case.get("local_title"):
             prefix = (repo / "app.py").read_bytes().split(b"def label(", 1)[0]
             manifest[name]["protected_prefix"] = prefix.hex()
@@ -139,6 +145,8 @@ def check(root):
                 errors.append(f"{key} changed")
         changed = sorted(p for p in before["files"].keys() | after["files"].keys()
                          if before["files"].get(p) != after["files"].get(p))
+        if case.get("requires_cleanup") and not changed:
+            errors.append("expected an in-scope cleanup, but no files changed")
         if set(changed) - set(case["editable"]):
             errors.append(f"out-of-scope files changed: {changed}")
         if name == "mixed-changes":

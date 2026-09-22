@@ -2,7 +2,7 @@
 
 A skill for coding agents that reviews code and documentation for quality, performance, and reuse, then applies targeted cleanup while preserving behavior. Inspired by Cursor's `/simplify` workflow.
 
-**Version:** v0.2. Reviewers provide findings; the parent agent owns edits and verification.
+**Version:** v0.3. Reviewers provide findings; the parent agent owns edits and verification.
 
 The skill uses the [Agent Skills format](https://agentskills.io/specification). It requires access to a Git working tree and tools for reading files, running commands, and applying authorized edits. Subagents are optional; Python is only required for the development fixtures.
 
@@ -52,13 +52,13 @@ Review origin/main..HEAD using refine without editing files.
 - Cleanup stays within the selected scope and preserves unrelated local changes, including changes in the same file. Findings that cannot be safely separated from local work are deferred.
 - Reviewing staged changes does not authorize re-staging; asking for a commit message does not authorize a commit. Authorization to commit permits a new commit; rewriting existing commits requires explicit authorization for that operation.
 - Cleanup preserves the selected change's intended outcome, including its features, fixes, and compatibility contracts. Each accepted recommendation needs evidence of behavior preservation; uncertain recommendations are deferred. Correctness or product behavior changes require authorization in your request. No useful findings is a valid outcome.
-- Three reviewers run in parallel when the host has sufficient capacity and can establish that they use the parent's model. Otherwise, the parent performs the three review passes sequentially and reports that fallback.
+- Quality, performance, and reuse remain the three review lenses, but review effort scales with the target. Small scopes use one local review; larger scopes can use up to three independent, read-only reviewers for applicable lenses. Delegation requires sufficient capacity and confirmed use of the parent's model; otherwise the parent reviews locally and reports the fallback. Documentation does not require a runtime-performance review.
 
 These are instructions to the agent, not tool-enforced isolation. Verification depends on the checks available in your repository; inspect the resulting diff before accepting it.
 
 ## Compatibility status
 
-Earlier workflow evaluation in Codex covered six synthetic cases with sequential review, plus a separate parallel-review smoke check. This portable revision still needs platform-level acceptance runs. The installation table follows the hosts' official documentation; native installation/discovery/invocation and execution in Cursor or Claude Code have not been verified here. Format compatibility alone does not establish identical behavior across agents.
+Earlier workflow evaluation in Codex covered six synthetic cases with sequential review, plus a separate parallel-review smoke check. Those results predate v0.3's proportional review policy; this revision still needs independent agent and platform-level acceptance runs. The installation table follows the hosts' official documentation; native installation/discovery/invocation and execution in Cursor or Claude Code have not been verified here. Format compatibility alone does not establish identical behavior across agents.
 
 ## Development
 

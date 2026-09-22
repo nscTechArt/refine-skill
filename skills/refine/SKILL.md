@@ -5,59 +5,42 @@ description: Refine a requested code or documentation change through quality, pe
 
 # Refine
 
-Reduce accidental complexity while preserving the selected scope and intended behavior. The parent owns edits; reviewers supply evidence.
+Reduce accidental complexity in the selected scope without changing its intended behavior. Quality, performance, and reuse are review lenses, not finding quotas. The parent owns edits and verification; reviewers supply evidence.
 
-This workflow uses a Git working tree and the host agent's tools to read files, run Git and relevant checks, and apply edits when authorized. Subagents are optional.
+Use a Git working tree and the host's file, command, and editing tools. Subagents are optional. Honor review-only requests; questions about the skill do not authorize running it.
 
-## 1. Select the scope
+## 1. Select and protect the scope
 
-Read repository instructions and inspect `git status` before reviewing. A question about this skill's location or applicability is a question, not an instruction to run a refinement pass. Honor explicit review-only requests.
+Read repository instructions and inspect `git status`. Resolve the target in this order:
 
-Resolve scope in this order:
+1. **Explicit scope:** requested paths, symbols, commit/range, staged/unstaged changes, or named area. Whole-repository review requires an explicit request; docs-only targets are valid. If empty, report and stop without reviews or edits; if invalid or inaccessible, clarify rather than substitute a target.
+2. **Local changes:** inspect both `git diff --no-color` and `git diff --cached --no-color`; use the combined changes relevant to the request.
+3. **Conversation target:** concrete files, symbols, or changes already identified.
+4. **HEAD:** inspect `git show --stat --patch --no-color HEAD`; stop if no usable target exists.
 
-1. **Explicit scope:** use the requested paths, symbols, commit, range, staged/unstaged changes, or natural-language area. Whole-repository and documentation-only scopes are valid when requested. If that scope is empty, report it and stop without edits or reviewers. An invalid or inaccessible scope needs clarification, not a substitute target.
-2. **No explicit scope:** inspect both `git diff --no-color` and `git diff --cached --no-color`; use the combined non-empty changes relevant to the request.
-3. **No local diff:** use concrete files, symbols, or changes identified in the conversation.
-4. **No conversation target:** inspect `git show --stat --patch --no-color HEAD`. If no usable HEAD exists, report that no target is available.
+Note the selected snapshot and exclusions, including relevant untracked files omitted by Git diffs. Reading callers or sibling implementations is context, not permission to edit them; a docs-only target does not authorize implementation cleanup.
 
-Record the selected revision/diff and exclusions. Git diffs omit untracked files; account for them when the request or conversation includes them. Reading callers, sibling implementations, or documentation provides review context; it does not expand the edit scope. In particular, a docs-only commit does not authorize cleanup of nearby uncommitted implementation.
+For staged or historical targets, compare the selected snapshot with the working tree. Preserve unrelated hunks, even in the same file, and never undo later changes. Block only findings that cannot be safely separated from local work. Do not revert user changes or run formatters across excluded files.
 
-For a historical or staged diff, compare the selected snapshot with the current working tree before proposing edits. Preserve unrelated hunks even within the same file. If the versions cannot be safely separated, report the affected finding as blocked rather than overwriting local work.
+Stage only when authorized to stage or commit; create new commits only when authorized to commit. Honor authorization already given in the conversation. Otherwise keep the index and history unchanged. Reviewing staged changes or writing a commit message grants neither permission. Rewriting history, including amend or rebase, requires explicit authorization for that operation.
 
-Keep the index unchanged unless the user has authorized staging or committing, including earlier in the conversation. Authorization to commit permits a new commit; rewriting existing commits (for example, amend or rebase) requires explicit authorization for that operation. Otherwise preserve history. Reviewing staged changes does not authorize re-staging; writing a commit message does not authorize a commit.
+## 2. Establish intent and review
 
-## 2. Prepare the reviews
+Record a concise behavior baseline: for a diff/commit, its intended **post-change** features, fixes, and compatibility contracts; for a named area, its existing behavior and documented contracts. For documentation, preserve meaning and requirements. Identify relevant consumers and execution scale. No separate planning document is required.
 
-Record the behavior baseline: the selected change's intended outcome, including the features, fixes, and compatibility contracts it introduces or preserves. For a commit or diff, use the intended behavior after that change; for a named area, use its existing behavior and documented contracts. Historical scope does not authorize undoing later changes. Identify affected consumers and relevant runtime scale.
+Read [reviewers.md](references/reviewers.md) for the three lenses and shared finding contract. Consider all three, with effort proportional to the target:
 
-Read [references/reviewers.md](references/reviewers.md) for the role contracts. Give all reviewers the same behavior baseline, selected scope and exclusions, plus the full selected diff when practical. For large diffs, provide the file list, relevant hunks, a scope summary, and how to inspect omitted material. For non-diff scopes, provide the selected files/symbols and boundaries instead.
+- **Small or straightforward scope:** the parent covers the lenses in one read-only review, without separate briefs or reports per lens.
+- **Larger scope:** use independent parallel reviewers for applicable lenses when useful, up to three. Delegate only with sufficient capacity and confirmed use of the parent's model through documented inheritance or explicit selection. Use available capability information; do not investigate host internals. Otherwise, review locally and briefly disclose the fallback.
 
-Add role-specific context: invariants for quality, hot paths and scale for performance, and existing patterns or search targets for reuse. This context supplements the shared scope evidence.
+A lens with nothing material to investigate may end with a brief conclusion; documentation does not need a runtime-performance review. If delegating, use the brief and read-only restrictions in `reviewers.md`. Wait for all requested reviews before editing. Do not manufacture findings to fill roles.
 
-## 3. Run three read-only reviews
+## 3. Accept only worthwhile simplifications
 
-For a non-empty refinement scope, perform these three review passes:
+When there are candidate findings, read [reconciliation.md](references/reconciliation.md). The parent independently checks each candidate against that acceptance filter, resolves disagreements from evidence, and applies only accepted, authorized edits. If none qualify, leave the target unchanged.
 
-1. **Code quality** — unnecessary complexity, redundant state, wrappers, or obsolete code.
-2. **Performance** — meaningful waste removable through targeted simplification.
-3. **Reuse / repository patterns** — existing implementations and conventions, including reasons not to reuse them.
+## 4. Verify and report
 
-Launch exactly three independent reviewers in parallel when the host provides sufficient delegation capacity and can establish that each reviewer uses the parent's model, through documented inheritance or explicit model selection. Tell every reviewer to report only: no edits, formatters, staging, commits, or worktree creation. Wait for all three results before applying findings.
+Run the smallest meaningful checks permitted by repository/user instructions. Reinspect the final diff and workspace against the initial scope, index, history, and unrelated changes. Distinguish passed checks from attempted, unavailable, or skipped checks.
 
-If delegation, capacity, or confirmed same-model selection is unavailable, the parent performs the three passes sequentially and discloses the fallback. Do not assume an unspecified reviewer model inherits the parent's model. A review pass may return **no material findings**; a documentation-only scope does not require an invented runtime performance problem.
-
-## 4. Reconcile and edit
-
-Read [references/reconciliation.md](references/reconciliation.md) before accepting findings. Deduplicate recommendations and resolve disagreements against behavior and repository evidence, not votes or confidence scores.
-
-Apply only supported, in-scope changes that preserve the behavior baseline and reduce total complexity. Small duplication can be simpler than a new abstraction.
-
-Report discovered correctness problems or behavior changes separately from simplification. Implement them only when the user's existing request also authorizes that work; otherwise leave them as findings. Do not silently turn input validation, error handling, or product choices into cleanup.
-
-When no finding passes the acceptance filter, leave the code unchanged.
-
-## 5. Verify and report
-
-Run the smallest meaningful checks for the edited surface permitted by repository/user instructions. Reinspect the final diff and workspace state against the initial scope, index, and unrelated changes. Distinguish successful checks from attempted, unavailable, or skipped checks.
-
-Summarize applied cleanup, deferred recommendations with reasons, and verification. Separate recommendations from deliberate decisions to retain existing code. Mention unchanged index/history, preserved local work, or sequential fallback when relevant. An empty scope or no-change result is a complete outcome.
+Briefly report applied cleanup, material deferred findings and reasons, and verification. Mention relevant workspace constraints or delegation fallback, not a recital of every rule. Separate deferred work from deliberate decisions to retain code. Empty scope and no-change outcomes are complete results.
