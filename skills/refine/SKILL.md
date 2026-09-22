@@ -7,6 +7,8 @@ description: Refine a requested code or documentation change through quality, pe
 
 Reduce accidental complexity while preserving the selected scope and intended behavior. The parent owns edits; reviewers supply evidence.
 
+This workflow uses a Git working tree and the host agent's tools to read files, run Git and relevant checks, and apply edits when authorized. Subagents are optional.
+
 ## 1. Select the scope
 
 Read repository instructions and inspect `git status` before reviewing. A question about this skill's location or applicability is a question, not an instruction to run a refinement pass. Honor explicit review-only requests.
@@ -34,15 +36,15 @@ Add role-specific context: invariants for quality, hot paths and scale for perfo
 
 ## 3. Run three read-only reviews
 
-For a non-empty refinement scope, launch exactly three independent reviewers in parallel when delegation is available:
+For a non-empty refinement scope, perform these three review passes:
 
 1. **Code quality** — unnecessary complexity, redundant state, wrappers, or obsolete code.
 2. **Performance** — meaningful waste removable through targeted simplification.
 3. **Reuse / repository patterns** — existing implementations and conventions, including reasons not to reuse them.
 
-Use the parent's model for all three; inherit it rather than choosing a cheaper/faster model by default. Tell every reviewer to report only: no edits, formatters, staging, commits, or worktree creation. Wait for all three results before applying findings.
+Launch exactly three independent reviewers in parallel when the host provides sufficient delegation capacity and can establish that each reviewer uses the parent's model, through documented inheritance or explicit model selection. Tell every reviewer to report only: no edits, formatters, staging, commits, or worktree creation. Wait for all three results before applying findings.
 
-If delegation or capacity prevents three parallel reviews, perform the same three passes sequentially and disclose the fallback. A reviewer may return **no material findings**; a documentation-only scope does not require an invented runtime performance problem.
+If delegation, capacity, or confirmed same-model selection is unavailable, the parent performs the three passes sequentially and discloses the fallback. Do not assume an unspecified reviewer model inherits the parent's model. A review pass may return **no material findings**; a documentation-only scope does not require an invented runtime performance problem.
 
 ## 4. Reconcile and edit
 

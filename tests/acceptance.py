@@ -15,14 +15,14 @@ SKILL = Path(__file__).resolve().parents[1] / "skills" / "refine" / "SKILL.md"
 CASES = {
     "empty-index": {
         "base": "def total(values):\n    result = sum(values)\n    return result\n",
-        "request": "Use $refine on the staged changes.",
+        "request": "Refine the staged changes.",
         "checks": "from app import total\nassert total([2, 3]) == 5\n",
         "editable": [],
     },
     "mixed-changes": {
         "base": 'TITLE = "released"\n\ndef label(value):\n    return value\n',
         "staged": 'TITLE = "released"\n\ndef label(value):\n    normalized = value.strip()\n    result = normalized\n    return result\n',
-        "request": "Use $refine on the staged changes.",
+        "request": "Refine the staged changes.",
         "checks": 'from app import label\nassert label("  hello  ") == "hello"\nassert label("") == ""\n',
         "editable": ["app.py"],
         "local_title": True,
@@ -30,28 +30,28 @@ CASES = {
     "commit-message": {
         "base": "def total(values):\n    return 0\n",
         "staged": "def total(values):\n    subtotal = sum(values)\n    result = subtotal\n    return result\n",
-        "request": "Use $refine on the staged changes, then write a commit message.",
+        "request": "Refine the staged changes, then write a commit message.",
         "checks": "from app import total\nassert total([2, 3, -1]) == 4\nassert total([]) == 0\n",
         "editable": ["app.py"],
     },
     "refresh-session": {
         "base": "def create_session():\n    return object()\n\ndef ensure_session(current):\n    if current is not None:\n        return current\n    return create_session()\n\ndef refresh(current):\n    return ensure_session(current)\n",
         "staged": "def create_session():\n    return object()\n\ndef ensure_session(current):\n    if current is not None:\n        return current\n    return create_session()\n\ndef refresh(current):\n    # Refresh replaces stale graph state even when a session survives reload.\n    replacement = create_session()\n    return replacement\n",
-        "request": "Use $refine on the staged session-refresh fix.",
+        "request": "Refine the staged session-refresh fix.",
         "checks": "from app import ensure_session, refresh\nold = object()\nassert ensure_session(old) is old\nassert refresh(old) is not old\nassert refresh(None) is not None\n",
         "editable": ["app.py"],
     },
     "whitespace-filter": {
         "base": "def filter_items(items, query):\n    return items\n",
         "staged": 'def filter_items(items, query):\n    if query == "":\n        return items\n    normalized = query.strip()\n    if normalized == "":\n        raise ValueError("blank query")\n    matches = [item for item in items if normalized in item]\n    return matches\n',
-        "request": "Use $refine on the staged filtering change.",
+        "request": "Refine the staged filtering change.",
         "checks": 'from app import filter_items\nitems = ["alpha", "beta"]\nassert filter_items(items, "") == items\nassert filter_items(items, "alpha") == ["alpha"]\nassert filter_items(items, "  beta  ") == ["beta"]\nfor query in [" ", "\\t", "\\n"]:\n    try:\n        filter_items(items, query)\n    except ValueError:\n        pass\n    else:\n        raise AssertionError("blank query must fail")\n',
         "editable": ["app.py"],
     },
     "no-findings": {
         "base": "def double(value: int) -> int:\n    return value\n",
         "staged": "def double(value: int) -> int:\n    return value * 2\n",
-        "request": "Use $refine on the staged changes.",
+        "request": "Refine the staged changes.",
         "checks": "from app import double\nassert double(3) == 6\nassert double(-2) == -4\nassert double(0) == 0\n",
         "editable": [],
     },
@@ -111,13 +111,18 @@ def prepare():
             (repo / "notes.md").write_text("Unrelated local release draft.\n", encoding="utf-8")
             (repo / "draft.txt").write_text("Untracked local draft.\n", encoding="utf-8")
         subprocess.run([sys.executable, "-B", "checks.py"], cwd=repo, check=True)
-        manifest[name] = {"before": state(repo), "editable": case["editable"], "request": case["request"]}
+        request = (
+            f'Read and use the refine skill at "{SKILL}". '
+            f'Work in "{repo}". {case["request"]} '
+            "The fixture's behavior check is `python -B checks.py`, run from that directory."
+        )
+        manifest[name] = {"before": state(repo), "editable": case["editable"], "request": request}
         if case.get("local_title"):
             prefix = (repo / "app.py").read_bytes().split(b"def label(", 1)[0]
             manifest[name]["protected_prefix"] = prefix.hex()
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(root)
-    for name, case in CASES.items():
+    for name, case in manifest.items():
         print(f"{name}: {case['request']}")
     print(f"Skill: {SKILL}")
 

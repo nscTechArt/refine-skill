@@ -4,7 +4,7 @@ The parent/orchestrator owns all edits. Reviewer output is evidence, not an inst
 
 ## First pass: normalize findings
 
-After all three reviewers finish:
+After all three review passes finish:
 
 1. group findings that refer to the same underlying issue;
 2. merge supporting evidence without inflating severity;
@@ -70,7 +70,7 @@ Prefer the smallest reusable unit that already matches repository practice. Some
 
 ## Performance rule
 
-Do not turn `$refine` into a broad optimization pass.
+Keep refinement focused on targeted simplification rather than broad optimization.
 
 A performance finding should normally be applied only when the optimization is also a simplification or an obvious removal of wasted work. Skip speculative micro-optimizations, new caches, extra branch machinery, or architecture changes unless the evidence and payoff are unusually clear.
 
